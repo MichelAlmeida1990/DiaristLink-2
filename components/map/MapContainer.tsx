@@ -46,6 +46,8 @@ interface MapContainerProps {
     position: [number, number]
     title?: string
     description?: string
+    avatar_url?: string
+    color?: string
   }>
   onMarkerClick?: (markerId: string) => void
   className?: string
@@ -85,26 +87,61 @@ export default function MapContainer({
       />
       <MapControllerWrapper center={center} />
       
-      {markers.map((marker) => (
-        <Marker
-          key={marker.id}
-          position={marker.position}
-          eventHandlers={{
-            click: () => onMarkerClick?.(marker.id),
-          }}
-        >
-          {marker.title && (
-            <Popup>
-              <div>
-                <h3 className="font-semibold">{marker.title}</h3>
-                {marker.description && (
-                  <p className="text-sm text-gray-600">{marker.description}</p>
-                )}
-              </div>
-            </Popup>
-          )}
-        </Marker>
-      ))}
+      {markers.map((marker) => {
+        const CustomIcon = L.divIcon({
+          className: "custom-marker",
+          html: `
+            <div style="
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              border: 3px solid white;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+              overflow: hidden;
+              background: ${marker.color || "#3b82f6"};
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            ">
+              ${marker.avatar_url 
+                ? `<img src="${marker.avatar_url}" style="width: 100%; height: 100%; object-fit: cover;" />`
+                : `<span style="color: white; font-weight: bold; font-size: 16px;">${marker.title?.charAt(0).toUpperCase() || "?"}</span>`
+              }
+            </div>
+          `,
+          iconSize: [40, 40],
+          iconAnchor: [20, 40],
+        })
+
+        return (
+          <Marker
+            key={marker.id}
+            position={marker.position}
+            icon={CustomIcon}
+            eventHandlers={{
+              click: () => onMarkerClick?.(marker.id),
+            }}
+          >
+            {marker.title && (
+              <Popup>
+                <div className="min-w-[200px]">
+                  {marker.avatar_url && (
+                    <img 
+                      src={marker.avatar_url} 
+                      alt={marker.title}
+                      className="w-16 h-16 rounded-full mx-auto mb-2 object-cover"
+                    />
+                  )}
+                  <h3 className="font-semibold text-center">{marker.title}</h3>
+                  {marker.description && (
+                    <p className="text-sm text-gray-600 text-center mt-1">{marker.description}</p>
+                  )}
+                </div>
+              </Popup>
+            )}
+          </Marker>
+        )
+      })}
     </LeafletMapContainer>
   )
 }

@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import MapContainer from "@/components/map/MapContainer"
 import { getCurrentPosition } from "@/lib/geolocation"
 import { createClient } from "@/lib/supabase/client"
+import UserMenu from "@/components/nav/UserMenu"
+import Logo from "@/components/Logo"
 
 export default function EmployerMapPage() {
   const router = useRouter()
@@ -25,28 +27,38 @@ export default function EmployerMapPage() {
       const position = await getCurrentPosition()
       setUserLocation([position.latitude, position.longitude])
 
-      // Buscar diaristas próximas (mock por enquanto)
-      // TODO: Implementar busca real no Supabase
-      setDiarists([
-        {
-          id: "1",
-          name: "Maria Silva",
-          position: [position.latitude + 0.01, position.longitude + 0.01] as [number, number],
-          rating: 4.8,
-          distance: 1.2,
-        },
-        {
-          id: "2",
-          name: "Joana Santos",
-          position: [position.latitude - 0.01, position.longitude + 0.02] as [number, number],
-          rating: 4.9,
-          distance: 2.5,
-        },
-      ])
+      // Buscar diaristas próximas no Supabase
+      const response = await fetch(
+        `/api/diarists/nearby?lat=${position.latitude}&lon=${position.longitude}&radius=10`
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        const diaristsData = data.diarists.map((diarist: any) => ({
+          id: diarist.id,
+          name: diarist.name,
+          position: [
+            parseFloat(diarist.latitude.toString()),
+            parseFloat(diarist.longitude.toString()),
+          ] as [number, number],
+          rating: 4.5, // TODO: Calcular rating médio das avaliações
+          distance: diarist.distance,
+          email: diarist.email,
+          bio: diarist.bio,
+          avatar_url: diarist.avatar_url,
+          is_verified: diarist.is_verified,
+        }))
+        setDiarists(diaristsData)
+      } else {
+        console.error("Erro ao buscar diaristas")
+        // Fallback: diaristas mock se não houver no banco
+        setDiarists([])
+      }
     } catch (error) {
       console.error("Erro ao carregar mapa:", error)
       // Fallback para São Paulo
       setUserLocation([-23.5505, -46.6333])
+      setDiarists([])
     } finally {
       setLoading(false)
     }
@@ -78,15 +90,16 @@ export default function EmployerMapPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center gap-4">
-              <Link href="/dashboard/employer" className="text-xl font-bold text-blue-600">
-                DiaristaLink
-              </Link>
+              <Logo size="md" />
               <span className="text-gray-500">/</span>
               <span className="text-gray-700">Mapa</span>
             </div>
-            <Link href="/dashboard/employer">
-              <Button variant="outline">Voltar</Button>
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard/employer">
+                <Button variant="outline">Voltar</Button>
+              </Link>
+              <UserMenu role="employer" />
+            </div>
           </div>
         </div>
       </nav>
@@ -111,7 +124,9 @@ export default function EmployerMapPage() {
                   id: d.id,
                   position: d.position,
                   title: d.name,
-                  description: `⭐ ${d.rating} • ${d.distance} km`,
+                  description: `⭐ ${d.rating} • ${d.distance} km${d.is_verified ? " • ✅ Verificada" : ""}`,
+                  avatar_url: d.avatar_url,
+                  color: d.is_verified ? "#10b981" : "#3b82f6",
                 }))}
                 onMarkerClick={handleMarkerClick}
                 className="h-[600px] w-full rounded-lg"
@@ -122,15 +137,44 @@ export default function EmployerMapPage() {
 
         <div className="grid md:grid-cols-2 gap-4">
           {diarists.map((diarist) => (
-            <Card key={diarist.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+            <Card 
+              key={diarist.id} 
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => handleMarkerClick(diarist.id)}
+            >
               <CardHeader>
-                <CardTitle>{diarist.name}</CardTitle>
-                <CardDescription>
-                  ⭐ {diarist.rating} • {diarist.distance} km de distância
-                </CardDescription>
+                <div className="flex items-center gap-3">
+                  {diarist.avatar_url ? (
+                    <img 
+                      src={diarist.avatar_url} 
+                      alt={diarist.name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                      <span className="text-blue-600 font-semibold">
+                        {diarist.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <CardTitle className="flex items-center gap-2">
+                      {diarist.name}
+                      {diarist.is_verified && (
+                        <span className="text-green-600 text-sm">✅</span>
+                      )}
+                    </CardTitle>
+                    <CardDescription>
+                      ⭐ {diarist.rating} • {diarist.distance} km de distância
+                    </CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <Button className="w-full">Contratar Agora</Button>
+                {diarist.bio && (
+                  <p className="text-sm text-gray-600 mb-3">{diarist.bio}</p>
+                )}
+                <Button className="w-full">Ver Perfil</Button>
               </CardContent>
             </Card>
           ))}

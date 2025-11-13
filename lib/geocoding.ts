@@ -21,7 +21,7 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult |
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
       {
         headers: {
-          "User-Agent": "DiaristaLink/1.0", // Requerido pelo Nominatim
+          "User-Agent": "Empreguetes.com/1.0", // Requerido pelo Nominatim
         },
       }
     )
@@ -58,7 +58,7 @@ export async function reverseGeocode(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
       {
         headers: {
-          "User-Agent": "DiaristaLink/1.0",
+          "User-Agent": "Empreguetes.com/1.0",
         },
       }
     )

@@ -2,9 +2,9 @@
 
 ## 📋 Status Geral do Projeto
 
-**Última atualização:** Novembro 2025  
+**Última atualização:** Dezembro 2024  
 **Porta do servidor:** 3001  
-**Status:** ✅ Autenticação estável (fluxo empregador OK; diarista em validação)
+**Status:** ✅ Autenticação completa e testada | 🚧 Mapa interativo em desenvolvimento | 📦 Projeto versionado no GitHub
 
 ---
 
@@ -122,7 +122,10 @@
 - [x] Página de mapa criada (/dashboard/employer/map)
 - [x] Mapa full-screen mostrando diaristas disponíveis
 - [x] Link no dashboard para acessar o mapa
-- [ ] Pins de diaristas próximas (raio 5-10km) - busca real no Supabase
+- [x] API route para buscar diaristas próximas (/api/diarists/nearby)
+- [x] Busca de diaristas reais no Supabase por GPS
+- [x] Cálculo de distância implementado
+- [x] Filtro por raio (configurável, padrão 10km)
 - [ ] Badges de rating/estrelas nos pins
 - [ ] Modal de perfil da diarista ao clicar no pin
 - [ ] Botão "Contratar Agora" no modal
@@ -146,16 +149,20 @@
 
 ---
 
-## 🚧 FASE 4: Sistema de Jobs e Matching (PENDENTE)
+## 🚧 FASE 4: Sistema de Jobs e Matching (EM DESENVOLVIMENTO)
 
 ### Postar Jobs (Empregadores)
-- [ ] Formulário para criar job
-- [ ] Seleção de tipo de serviço (limpeza geral, cozinha, etc.)
-- [ ] Seleção de data/horário
-- [ ] Estimativa de duração
-- [ ] Endereço via busca (Google Places alternativo gratuito)
+- [x] Formulário para criar job (/dashboard/employer/jobs/new)
+- [x] Seleção de tipo de serviço (limpeza geral, cozinha, etc.)
+- [x] Seleção de data/horário
+- [x] Estimativa de duração
+- [x] Busca de CEP via API externa (ViaCEP)
+- [x] Preenchimento automático de endereço via CEP
+- [x] Endereço via busca (Nominatim - gratuito)
+- [x] Geocoding de endereços
+- [x] Publicação do job no banco de dados
 - [ ] Preview do job antes de postar
-- [ ] Publicação do job no banco de dados
+- [ ] Validação de campos
 
 ### Matching Automático
 - [ ] Algoritmo de matching baseado em localização GPS
@@ -166,9 +173,12 @@
 - [ ] Sistema de matching em tempo real
 
 ### Gerenciamento de Jobs
-- [ ] Lista de jobs pendentes (empregadores)
-- [ ] Lista de jobs disponíveis (diaristas)
-- [ ] Status de jobs (pending, accepted, in_progress, completed, cancelled)
+- [x] Lista de jobs pendentes (empregadores) - /dashboard/employer/jobs
+- [x] Lista de jobs disponíveis (diaristas) - /dashboard/diarist/jobs
+- [x] API route para buscar jobs disponíveis (/api/jobs/available)
+- [x] Status de jobs (pending, accepted, in_progress, completed, cancelled)
+- [x] Visualização de jobs no dashboard com estatísticas
+- [x] Sistema de aceitar jobs (diaristas)
 - [ ] Histórico de jobs
 - [ ] Cancelamento de jobs
 - [ ] Edição de jobs (antes de aceitar)
@@ -296,8 +306,8 @@
 - ✅ Fase 1: Setup Inicial e Landing Page
 - ✅ Fase 2: Autenticação Completa
 
-### 🚧 Em Desenvolvimento: 1 fase
-- 🚧 Fase 3: Mapa Interativo (planejamento e design em andamento)
+### 🚧 Em Desenvolvimento: 1 fase (33%)
+- 🚧 Fase 3: Mapa Interativo (em desenvolvimento - estrutura base criada)
 
 ### ⏳ Pendente: 6 fases (67%)
 - ⏳ Fase 4: Sistema de Jobs e Matching
@@ -338,6 +348,6 @@
 
 ---
 
-**Última atualização:** Novembro 2025  
-**Status:** ✅ Projeto configurado e pronto para desenvolvimento das próximas fases; focar na validação do perfil diarista e mapa interativo
+**Última atualização:** Dezembro 2024  
+**Status:** ✅ Projeto configurado, autenticação completa, mapa interativo iniciado | 📦 Versionado no GitHub | 🚧 Próximo: Buscar diaristas reais no Supabase e criar sistema de jobs
 

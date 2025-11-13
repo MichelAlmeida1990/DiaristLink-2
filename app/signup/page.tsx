@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
+import Logo from "@/components/Logo"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -15,6 +16,10 @@ export default function SignupPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<"employer" | "diarist">("employer")
+  const [address, setAddress] = useState("")
+  const [city, setCity] = useState("")
+  const [state, setState] = useState("")
+  const [zipCode, setZipCode] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -44,11 +49,15 @@ export default function SignupPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            name,
-            email,
-            role,
-          }),
+        body: JSON.stringify({
+          name,
+          email,
+          role,
+          address: role === "diarist" ? address : undefined,
+          city: role === "diarist" ? city : undefined,
+          state: role === "diarist" ? state : undefined,
+          zip_code: role === "diarist" ? zipCode : undefined,
+        }),
         })
 
         if (!response.ok) {
@@ -75,6 +84,9 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader>
+          <div className="flex justify-center mb-4">
+            <Logo size="md" />
+          </div>
           <CardTitle className="text-3xl text-center">Criar nova conta</CardTitle>
           <CardDescription className="text-center">
             Ou{" "}
@@ -164,6 +176,63 @@ export default function SignupPage() {
                 </label>
               </div>
             </div>
+
+            {role === "diarist" && (
+              <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm font-medium text-blue-900">
+                  📋 Informações adicionais para diaristas
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Endereço completo *</Label>
+                  <Input
+                    id="address"
+                    required
+                    placeholder="Rua, número, bairro"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Cidade *</Label>
+                    <Input
+                      id="city"
+                      required
+                      placeholder="São Paulo"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">Estado *</Label>
+                    <Input
+                      id="state"
+                      required
+                      placeholder="SP"
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zipCode">CEP *</Label>
+                  <Input
+                    id="zipCode"
+                    required
+                    placeholder="00000-000"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <p className="text-xs text-blue-700">
+                  ⚠️ Após o cadastro, você precisará completar a verificação de documentos
+                </p>
+              </div>
+            )}
 
             <Button
               type="submit"

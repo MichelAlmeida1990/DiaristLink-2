@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { LogoutButton } from "@/components/auth/LogoutButton"
+import UserMenu from "@/components/nav/UserMenu"
+import Logo from "@/components/Logo"
 
 export default async function EmployerDashboard() {
   const supabase = await createClient()
@@ -23,21 +24,21 @@ export default async function EmployerDashboard() {
     redirect("/dashboard")
   }
 
+  // Buscar jobs do empregador
+  const { data: jobs } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("employer_id", user.id)
+    .order("created_at", { ascending: false })
+
 
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-xl font-bold text-blue-600">
-                DiaristaLink
-              </Link>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-700">Olá, {profile.name}</span>
-              <LogoutButton />
-            </div>
+            <Logo size="md" />
+            <UserMenu role="employer" />
           </div>
         </div>
       </nav>
@@ -51,19 +52,34 @@ export default async function EmployerDashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Jobs Ativos</CardDescription>
-              <CardTitle className="text-4xl text-blue-600">0</CardTitle>
+              <CardTitle className="text-4xl text-blue-600">
+                {(() => {
+                  const activeJobs = jobs?.filter(
+                    (j) => j.status === "pending" || j.status === "accepted" || j.status === "in_progress"
+                  ).length || 0
+                  return activeJobs
+                })()}
+              </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader>
               <CardDescription>Jobs Concluídos</CardDescription>
-              <CardTitle className="text-4xl text-green-600">0</CardTitle>
+              <CardTitle className="text-4xl text-green-600">
+                {jobs?.filter((j) => j.status === "completed").length || 0}
+              </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader>
               <CardDescription>Total Gasto</CardDescription>
-              <CardTitle className="text-4xl text-purple-600">R$ 0</CardTitle>
+              <CardTitle className="text-4xl text-purple-600">
+                R$ {(() => {
+                  const total = jobs?.filter((j) => j.status === "completed")
+                    .reduce((sum, j) => sum + parseFloat(j.price.toString()), 0) || 0
+                  return total.toFixed(2)
+                })()}
+              </CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -71,7 +87,7 @@ export default async function EmployerDashboard() {
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardHeader>
-              <CardTitle>Bem-vindo ao DiaristaLink!</CardTitle>
+              <CardTitle>Bem-vindo ao Empreguetes.com!</CardTitle>
               <CardDescription>
                 Encontre diaristas profissionais próximas a você
               </CardDescription>
@@ -82,9 +98,16 @@ export default async function EmployerDashboard() {
                   Ver Mapa de Diaristas
                 </Button>
               </Link>
-              <Button className="w-full" variant="outline" size="lg">
-                Criar Novo Job
-              </Button>
+              <Link href="/dashboard/employer/jobs/new">
+                <Button className="w-full" variant="outline" size="lg">
+                  Criar Novo Job
+                </Button>
+              </Link>
+              <Link href="/dashboard/employer/jobs">
+                <Button className="w-full" variant="secondary" size="lg">
+                  Ver Meus Jobs
+                </Button>
+              </Link>
             </CardContent>
           </Card>
           <Card>

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, email, role } = body
+    const { name, email, role, address, city, state, zip_code } = body
 
     // Usar service_role_key para bypass do RLS se disponível
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -35,15 +35,27 @@ export async function POST(request: Request) {
       )
     }
 
+    const profileData: any = {
+      id: user.id,
+      name,
+      email,
+      role,
+    }
+
+    // Adicionar campos de endereço se for diarista
+    if (role === "diarist") {
+      if (address) profileData.address = address
+      if (city) profileData.city = city
+      if (state) profileData.state = state
+      if (zip_code) profileData.zip_code = zip_code
+      // Status inicial de verificação para diaristas
+      profileData.verification_status = "pending"
+    }
+
     // Criar perfil
     const { data, error } = await supabaseAdmin
       .from("profiles")
-      .insert({
-        id: user.id,
-        name,
-        email,
-        role,
-      })
+      .insert(profileData)
       .select()
       .single()
 

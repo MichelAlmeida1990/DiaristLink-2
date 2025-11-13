@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "DiaristaLink - Marketplace de Serviços Domésticos",
-  description: "Conecte-se com diaristas profissionais em tempo real",
+  title: "Empreguetes.com - Marketplace de Serviços Domésticos",
+  description: "Conecte-se com profissionais qualificados em tempo real",
 };
 
 export default function RootLayout({
