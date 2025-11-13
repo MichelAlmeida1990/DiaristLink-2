@@ -248,6 +248,29 @@ CREATE POLICY "Employers can view verified diarist certificates" ON certificates
     )
   );
 
+CREATE OR REPLACE FUNCTION check_single_active_job()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.diarist_id IS NOT NULL AND NEW.status IN ('accepted', 'in_progress') THEN
+    IF EXISTS (
+      SELECT 1 FROM jobs
+      WHERE diarist_id = NEW.diarist_id
+      AND status IN ('accepted', 'in_progress')
+      AND id != NEW.id
+    ) THEN
+      RAISE EXCEPTION 'Uma diarista só pode ter um job ativo por vez. Finalize ou cancele o job atual antes de aceitar outro.';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_check_single_active_job ON jobs;
+CREATE TRIGGER trigger_check_single_active_job
+  BEFORE INSERT OR UPDATE ON jobs
+  FOR EACH ROW
+  EXECUTE FUNCTION check_single_active_job();
+
 CREATE INDEX IF NOT EXISTS idx_profiles_city_state ON profiles(city, state);
 CREATE INDEX IF NOT EXISTS idx_profiles_verification_status ON profiles(verification_status) WHERE role = 'diarist';
 CREATE INDEX IF NOT EXISTS idx_references_diarist ON professional_references(diarist_id);
@@ -256,3 +279,4 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_employer ON jobs(employer_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_diarist ON jobs(diarist_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_jobs_diarist_status ON jobs(diarist_id, status) WHERE status IN ('accepted', 'in_progress');

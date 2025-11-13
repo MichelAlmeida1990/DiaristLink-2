@@ -44,9 +44,25 @@ export default async function EmployerDashboard() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Dashboard do Empregador
-        </h1>
+        {/* Hero Section with Image */}
+        <div className="relative rounded-2xl overflow-hidden mb-8 h-64 md:h-80">
+          <img
+            src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+            alt="Profissional de limpeza"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/80 via-purple-600/80 to-pink-600/80"></div>
+          <div className="absolute inset-0 flex items-center justify-center md:justify-start px-8">
+            <div className="text-white">
+              <h1 className="text-4xl md:text-5xl font-bold mb-2">
+                Dashboard do Empregador
+              </h1>
+              <p className="text-xl text-white/90">
+                Encontre profissionais de limpeza qualificados
+              </p>
+            </div>
+          </div>
+        </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card>
@@ -85,7 +101,15 @@ export default async function EmployerDashboard() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card>
+          <Card className="overflow-hidden">
+            <div className="relative h-48">
+              <img
+                src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+                alt="Limpeza profissional"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent"></div>
+            </div>
             <CardHeader>
               <CardTitle>Bem-vindo ao Empreguetes.com!</CardTitle>
               <CardDescription>
@@ -110,7 +134,15 @@ export default async function EmployerDashboard() {
               </Link>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="overflow-hidden">
+            <div className="relative h-48">
+              <img
+                src="https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+                alt="Organização e limpeza"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent"></div>
+            </div>
             <CardHeader>
               <CardTitle>Status do Sistema</CardTitle>
               <CardDescription>Funcionalidades disponíveis</CardDescription>
@@ -126,11 +158,11 @@ export default async function EmployerDashboard() {
                   <span>Autenticação completa</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-yellow-600">🚧</span>
+                  <span className="text-green-600">✅</span>
                   <span>Mapa interativo</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-yellow-600">🚧</span>
+                  <span className="text-green-600">✅</span>
                   <span>Criação de jobs</span>
                 </li>
                 <li className="flex items-center gap-2">
@@ -139,6 +171,49 @@ export default async function EmployerDashboard() {
                 </li>
               </ul>
             </CardContent>
+          </Card>
+        </div>
+        
+        {/* Image Gallery Section */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card className="overflow-hidden group cursor-pointer hover:shadow-xl transition-all duration-300">
+            <div className="relative h-48 overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+                alt="Limpeza de janelas"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+              <div className="absolute bottom-4 left-4 text-white font-semibold">
+                Limpeza Profissional
+              </div>
+            </div>
+          </Card>
+          <Card className="overflow-hidden group cursor-pointer hover:shadow-xl transition-all duration-300">
+            <div className="relative h-48 overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+                alt="Organização de espaços"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+              <div className="absolute bottom-4 left-4 text-white font-semibold">
+                Organização Completa
+              </div>
+            </div>
+          </Card>
+          <Card className="overflow-hidden group cursor-pointer hover:shadow-xl transition-all duration-300">
+            <div className="relative h-48 overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1563453392212-326f5e854473?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+                alt="Limpeza residencial"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+              <div className="absolute bottom-4 left-4 text-white font-semibold">
+                Serviços Residenciais
+              </div>
+            </div>
           </Card>
         </div>
       </main>

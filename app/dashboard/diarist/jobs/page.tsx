@@ -27,14 +27,52 @@ interface Job {
   } | null
 }
 
+interface ActiveJob {
+  id: string
+  title: string
+  status: string
+  scheduled_at: string
+}
+
 export default function DiaristJobsPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
+  const [activeJob, setActiveJob] = useState<ActiveJob | null>(null)
+  const [acceptingJobId, setAcceptingJobId] = useState<string | null>(null)
+
+  const checkActiveJob = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) return
+
+      // Buscar job ativo da diarista (accepted ou in_progress)
+      const { data: activeJobs } = await supabase
+        .from("jobs")
+        .select("id, title, status, scheduled_at")
+        .eq("diarist_id", user.id)
+        .in("status", ["accepted", "in_progress"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+
+      if (activeJobs && activeJobs.length > 0) {
+        setActiveJob(activeJobs[0])
+      } else {
+        setActiveJob(null)
+      }
+    } catch (error) {
+      console.error("Erro ao verificar job ativo:", error)
+    }
+  }
 
   const loadJobs = async (location?: { lat: number; lon: number }) => {
     try {
+      // Verificar se há job ativo primeiro
+      await checkActiveJob()
+
       // Buscar jobs disponíveis
       // Se tiver localização, passa para filtrar por distância (quando o job tiver coordenadas)
       const url = location
@@ -78,12 +116,35 @@ export default function DiaristJobsPage() {
   }, [])
 
   const handleAcceptJob = async (jobId: string) => {
+    // Verificar se já tem job ativo
+    if (activeJob) {
+      alert(`Você já tem um job ativo: "${activeJob.title}". Finalize ou cancele o job atual antes de aceitar outro.`)
+      return
+    }
+
+    setAcceptingJobId(jobId)
+
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
         router.push("/login")
+        return
+      }
+
+      // Verificar novamente se não há job ativo (race condition)
+      const { data: activeJobs } = await supabase
+        .from("jobs")
+        .select("id")
+        .eq("diarist_id", user.id)
+        .in("status", ["accepted", "in_progress"])
+        .limit(1)
+
+      if (activeJobs && activeJobs.length > 0) {
+        alert("Você já tem um job ativo. Finalize ou cancele o job atual antes de aceitar outro.")
+        setAcceptingJobId(null)
+        await checkActiveJob()
         return
       }
 
@@ -94,14 +155,20 @@ export default function DiaristJobsPage() {
           status: "accepted" 
         })
         .eq("id", jobId)
+        .eq("status", "pending") // Garantir que só aceita jobs pendentes
 
       if (error) throw error
 
-      // Recarregar jobs
-      loadJobs()
+      // Recarregar jobs e verificar job ativo
+      await checkActiveJob()
+      await loadJobs(userLocation || undefined)
+      
+      alert("Job aceito com sucesso!")
     } catch (error: any) {
       console.error("Erro ao aceitar job:", error)
-      alert("Erro ao aceitar job: " + error.message)
+      alert("Erro ao aceitar job: " + (error.message || "Erro desconhecido"))
+    } finally {
+      setAcceptingJobId(null)
     }
   }
 
@@ -133,6 +200,37 @@ export default function DiaristJobsPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Alert for active job */}
+        {activeJob && (
+          <Card className="mb-6 border-yellow-300 bg-yellow-50">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <span className="text-yellow-600 text-xl">⚠️</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-yellow-900 mb-1">
+                    Você já tem um job ativo
+                  </h3>
+                  <p className="text-sm text-yellow-800 mb-2">
+                    Job: <strong>{activeJob.title}</strong> - Status: <strong>{activeJob.status === "accepted" ? "Aceito" : "Em Progresso"}</strong>
+                  </p>
+                  <p className="text-sm text-yellow-700">
+                    Você só pode aceitar um job por vez. Finalize ou cancele o job atual antes de aceitar outro.
+                  </p>
+                </div>
+                <Link href="/dashboard/diarist/jobs">
+                  <Button variant="outline" size="sm">
+                    Ver Meus Jobs
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Jobs Disponíveis
@@ -197,8 +295,12 @@ export default function DiaristJobsPage() {
                         <p className="text-xs text-gray-500">{job.employer?.email || 'Email não disponível'}</p>
                       </div>
                     </div>
-                    <Button onClick={() => handleAcceptJob(job.id)}>
-                      Aceitar Job
+                    <Button 
+                      onClick={() => handleAcceptJob(job.id)}
+                      disabled={!!activeJob || acceptingJobId === job.id}
+                      className={activeJob ? "opacity-50 cursor-not-allowed" : ""}
+                    >
+                      {acceptingJobId === job.id ? "Aceitando..." : activeJob ? "Job Ativo" : "Aceitar Job"}
                     </Button>
                   </div>
                 </CardContent>
