@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import UserMenu from "@/components/nav/UserMenu"
 import Logo from "@/components/Logo"
+import UpdateCoordinatesButton from "@/components/diarist/UpdateCoordinatesButton"
 
 export default async function DiaristDashboard() {
   const supabase = await createClient()
@@ -44,6 +45,9 @@ export default async function DiaristDashboard() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Alerta para atualizar coordenadas */}
+        <UpdateCoordinatesButton profile={profile} />
+
         {/* Hero Section with Image */}
         <div className="relative rounded-2xl overflow-hidden mb-8 h-64 md:h-80">
           <img
@@ -123,6 +127,11 @@ export default async function DiaristDashboard() {
               <Link href="/dashboard/diarist/jobs">
                 <Button className="w-full" size="lg" variant="outline">
                   Ver Jobs Disponíveis
+                </Button>
+              </Link>
+              <Link href="/dashboard/diarist/my-jobs">
+                <Button className="w-full" size="lg" variant="secondary">
+                  💼 Meus Jobs Aceitos
                 </Button>
               </Link>
               {(!profile.is_verified || profile.verification_status === "pending") && (

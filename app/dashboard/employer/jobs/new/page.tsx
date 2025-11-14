@@ -189,14 +189,32 @@ export default function NewJobPage() {
     if (!coords) {
       setLoadingCoords(true)
       try {
-        const addressForGeocode = `${formData.address.trim()}${formData.number ? `, ${formData.number.trim()}` : ""}, ${formData.neighborhood.trim()}, ${formData.city.trim()}, ${formData.state.trim()}, Brasil`.replace(/,\s*,/g, ",").replace(/^,\s*|\s*,$/g, "")
+        // Construir endereço completo com todos os campos disponíveis
+        const addressParts = [
+          formData.address.trim(),
+          formData.number ? formData.number.trim() : null,
+          formData.complement ? formData.complement.trim() : null,
+          formData.neighborhood.trim(),
+          formData.city.trim(),
+          formData.state.trim(),
+          "Brasil"
+        ].filter(Boolean)
+        
+        const addressForGeocode = addressParts.join(", ")
+        console.log("Buscando coordenadas para:", addressForGeocode)
+        
         coords = await fetchCoordinates(addressForGeocode)
         
         if (coords) {
           setAddressCoords(coords)
+          console.log("Coordenadas encontradas:", coords)
+        } else {
+          console.warn("Não foi possível encontrar coordenadas para o endereço")
+          setError("Aviso: Não foi possível encontrar coordenadas para este endereço. O job será criado sem coordenadas e não aparecerá no mapa.")
         }
       } catch (err) {
         console.error("Erro ao buscar coordenadas no submit:", err)
+        setError("Erro ao buscar coordenadas. O job será criado sem coordenadas.")
       } finally {
         setLoadingCoords(false)
       }

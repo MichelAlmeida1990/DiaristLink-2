@@ -50,6 +50,59 @@ export async function POST(request: Request) {
       if (zip_code) profileData.zip_code = zip_code
       // Status inicial de verificação para diaristas
       profileData.verification_status = "pending"
+      
+      // Tentar buscar coordenadas automaticamente se tiver endereço completo
+      if (address && city && state) {
+        try {
+          const fullAddress = [address, city, state, zip_code, "Brasil"]
+            .filter(Boolean)
+            .join(", ")
+          
+          // Buscar coordenadas usando Nominatim diretamente
+          const searchQueries = [
+            fullAddress,
+            fullAddress.replace(/, Brasil$/, ""),
+          ]
+          
+          for (const query of searchQueries) {
+            try {
+              const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=br&addressdetails=1`
+              
+              const response = await fetch(searchUrl, {
+                headers: {
+                  "User-Agent": "Empreguetes.com/1.0",
+                  "Accept-Language": "pt-BR,pt",
+                },
+              })
+
+              if (response.ok) {
+                const data = await response.json()
+                
+                if (data && data.length > 0) {
+                  const result = data[0]
+                  
+                  if (result.lat && result.lon) {
+                    const lat = parseFloat(result.lat)
+                    const lon = parseFloat(result.lon)
+                    
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                      profileData.latitude = lat
+                      profileData.longitude = lon
+                      break
+                    }
+                  }
+                }
+              }
+            } catch (err) {
+              console.error("Erro ao buscar coordenadas:", err)
+              continue
+            }
+          }
+        } catch (err) {
+          console.error("Erro ao buscar coordenadas no signup:", err)
+          // Não falhar o signup se não conseguir coordenadas
+        }
+      }
     }
 
     // Criar perfil

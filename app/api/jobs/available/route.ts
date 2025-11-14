@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       )
     }
 
-    // Buscar jobs disponíveis (pending)
+    // Buscar jobs disponíveis (pending e sem diarist_id)
     console.log("Buscando jobs para diarista:", user.id)
     
     const { data: jobs, error } = await supabase
@@ -45,6 +45,7 @@ export async function GET(request: Request) {
         employer:profiles!jobs_employer_id_fkey(name, email, avatar_url)
       `)
       .eq("status", "pending")
+      .is("diarist_id", null) // Garantir que não retorna jobs já aceitos
       .not("employer_id", "is", null)
       .order("created_at", { ascending: false })
 

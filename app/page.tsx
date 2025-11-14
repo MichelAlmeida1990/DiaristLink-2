@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import AnimatedText from "@/components/AnimatedText";
-import CleaningIllustration from "@/components/illustrations/CleaningIllustration";
 import LocationIcon from "@/components/illustrations/LocationIcon";
 import ChatIcon from "@/components/illustrations/ChatIcon";
 import StarIcon from "@/components/illustrations/StarIcon";
@@ -27,71 +26,49 @@ export default function Home() {
         </div>
         
         {/* Content */}
-        <div className="relative z-10 max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left side - Text */}
-            <div className="text-center lg:text-left space-y-8">
-              <div className="flex justify-center lg:justify-start mb-4 animate-fade-in">
-                <Logo size="lg" />
-              </div>
-              
-              <div className="animate-fade-in-up delay-100">
-                <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight">
-                  <AnimatedText 
-                    text="Encontre o Profissional Perfeito"
-                    className="block"
-                  />
-                </h1>
-              </div>
-              
-              <p className="text-xl md:text-2xl text-white/95 max-w-2xl mx-auto lg:mx-0 animate-fade-in-up delay-400 font-medium drop-shadow-2xl" style={{ textShadow: '2px 2px 8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.5)' }}>
-                Marketplace de serviços domésticos on-demand. 
-                Conecte-se com profissionais qualificados em tempo real.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up delay-500">
-                <Link href="/login?role=diarist" className="group">
-                  <Button 
-                    size="lg" 
-                    className="text-lg px-8 py-6 bg-white text-blue-600 hover:bg-blue-50 hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl font-semibold"
-                  >
-                    Começar Agora
-                  </Button>
-                </Link>
-                <Link href="/login" className="group">
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    className="text-lg px-8 py-6 bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 hover:scale-105 transition-all duration-300 font-semibold backdrop-blur-sm"
-                  >
-                    Já tem conta? Entrar
-                  </Button>
-                </Link>
-              </div>
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <div className="flex flex-col items-center justify-center text-center space-y-8">
+            <div className="flex justify-center mb-4 animate-fade-in">
+              <Logo size="lg" />
             </div>
             
-            {/* Right side - Illustration */}
-            <div className="hidden lg:flex justify-center items-center animate-fade-in-up delay-300">
-              <div className="relative">
-                <CleaningIllustration size={400} className="drop-shadow-2xl" />
-                <div className="absolute top-10 -left-10 animate-float delay-200">
-                  <SparkleIcon size={32} color="#FFB156" />
-                </div>
-                <div className="absolute bottom-20 -right-10 animate-float delay-400">
-                  <SparkleIcon size={24} color="#F1CB5E" />
-                </div>
-                <div className="absolute top-1/2 -right-5 animate-float delay-600">
-                  <SparkleIcon size={20} color="#8B5CF6" />
-                </div>
-              </div>
+            <div className="animate-fade-in-up delay-100">
+              <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight">
+                <AnimatedText 
+                  text="Encontre o Profissional Perfeito"
+                  className="block"
+                />
+              </h1>
+            </div>
+            
+            <p className="text-xl md:text-2xl text-white/95 max-w-2xl mx-auto animate-fade-in-up delay-400 font-medium drop-shadow-2xl" style={{ textShadow: '2px 2px 8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.5)' }}>
+              Marketplace de serviços domésticos on-demand. 
+              Conecte-se com profissionais qualificados em tempo real.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up delay-500">
+              <Link href="/login?role=diarist" className="group">
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8 py-6 bg-white text-blue-600 hover:bg-blue-50 hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl font-semibold"
+                >
+                  Começar Agora
+                </Button>
+              </Link>
+              <Link href="/login" className="group">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="text-lg px-8 py-6 bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 hover:scale-105 transition-all duration-300 font-semibold backdrop-blur-sm"
+                >
+                  Já tem conta? Entrar
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
         
         {/* Floating Icons */}
-        <div className="absolute bottom-20 left-10 animate-float delay-200 opacity-30">
-          <CleaningIllustration size={120} />
-        </div>
         <div className="absolute top-40 right-20 animate-float delay-400 opacity-20">
           <SparkleIcon size={48} color="#FFB156" />
         </div>
@@ -184,9 +161,6 @@ export default function Home() {
       <section className="relative py-24 px-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white overflow-hidden">
         {/* Background decorations */}
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-10 left-10 animate-float delay-200">
-            <CleaningIllustration size={100} />
-          </div>
           <div className="absolute bottom-10 right-10 animate-float delay-300">
             <SparkleIcon size={80} color="#FFB156" />
           </div>
@@ -199,14 +173,8 @@ export default function Home() {
         </div>
         
         <div className="relative z-10 max-w-5xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left side - Illustration */}
-            <div className="hidden lg:flex justify-center animate-fade-in-up delay-200">
-              <CleaningIllustration size={300} className="drop-shadow-2xl" />
-            </div>
-            
-            {/* Right side - Text */}
-            <div className="text-center lg:text-left space-y-8">
+          <div className="flex items-center justify-center">
+            <div className="text-center space-y-8">
               <h2 className="text-4xl md:text-5xl font-bold animate-fade-in-up delay-100">
                 Pronto para começar?
               </h2>

@@ -37,9 +37,9 @@ export async function GET(request: Request) {
       )
     }
 
-    // Filtrar por distância
-    const nearbyDiarists = profiles
-      ?.map((profile) => {
+    // Filtrar por distância e verificar disponibilidade
+    const nearbyDiaristsPromises = profiles
+      ?.map(async (profile) => {
         if (!profile.latitude || !profile.longitude) return null
 
         const distance = calculateDistance(
@@ -50,13 +50,39 @@ export async function GET(request: Request) {
         )
 
         if (distance <= radius) {
+          // Verificar se a diarista tem job ativo
+          const { data: activeJobs } = await supabase
+            .from("jobs")
+            .select("id")
+            .eq("diarist_id", profile.id)
+            .in("status", ["accepted", "in_progress"])
+            .limit(1)
+
+          const isAvailable = !activeJobs || activeJobs.length === 0
+
+          // Buscar rating médio das avaliações
+          const { data: ratings } = await supabase
+            .from("ratings")
+            .select("rating")
+            .eq("diarist_id", profile.id)
+
+          let averageRating = null
+          if (ratings && ratings.length > 0) {
+            const sum = ratings.reduce((acc, r) => acc + (r.rating || 0), 0)
+            averageRating = Math.round((sum / ratings.length) * 10) / 10
+          }
+
           return {
             ...profile,
             distance: Math.round(distance * 10) / 10, // Arredondar para 1 casa decimal
+            isAvailable,
+            rating: averageRating,
           }
         }
         return null
-      })
+      }) || []
+
+    const nearbyDiarists = (await Promise.all(nearbyDiaristsPromises))
       .filter((d) => d !== null)
       .sort((a, b) => (a?.distance || 0) - (b?.distance || 0)) // Ordenar por distância
 

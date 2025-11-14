@@ -37,6 +37,7 @@ export default function DiaristMapPage() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [loading, setLoading] = useState(true)
   const [jobs, setJobs] = useState<Job[]>([])
+  const [allJobs, setAllJobs] = useState<Job[]>([]) // Todos os jobs (com e sem coordenadas)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [activeJob, setActiveJob] = useState<ActiveJob | null>(null)
   const [acceptingJobId, setAcceptingJobId] = useState<string | null>(null)
@@ -83,8 +84,30 @@ export default function DiaristMapPage() {
 
       if (response.ok) {
         const data = await response.json()
-        const jobsData = (data.jobs || []).filter((job: Job) => job.latitude && job.longitude)
-        setJobs(jobsData)
+        const allJobsData = data.jobs || []
+        
+        console.log("Jobs recebidos da API:", allJobsData)
+        console.log("Jobs com coordenadas:", allJobsData.filter((j: Job) => j.latitude && j.longitude).length)
+        console.log("Jobs sem coordenadas:", allJobsData.filter((j: Job) => !j.latitude || !j.longitude).length)
+        
+        // Separar jobs com e sem coordenadas
+        const jobsWithCoords = allJobsData.filter((job: Job) => job.latitude && job.longitude)
+        const jobsWithoutCoords = allJobsData.filter((job: Job) => !job.latitude || !job.longitude)
+        
+        if (jobsWithoutCoords.length > 0) {
+          console.warn("Jobs sem coordenadas encontrados:", jobsWithoutCoords.map((j: Job) => ({ 
+            id: j.id, 
+            title: j.title, 
+            address: j.address,
+            latitude: j.latitude,
+            longitude: j.longitude
+          })))
+        }
+        
+        // Salvar todos os jobs para mostrar na lista
+        setAllJobs(allJobsData)
+        // Mostrar apenas jobs com coordenadas no mapa
+        setJobs(jobsWithCoords)
       }
     } catch (error) {
       console.error("Erro ao carregar mapa:", error)
@@ -134,18 +157,70 @@ export default function DiaristMapPage() {
         return
       }
 
-      const { error } = await supabase
+      // Primeiro, verificar o estado atual do job
+      const { data: currentJob } = await supabase
         .from("jobs")
-        .update({ 
-          diarist_id: user.id,
-          status: "accepted" 
-        })
+        .select("id, status, diarist_id")
         .eq("id", jobId)
-        .eq("status", "pending") // Garantir que só aceita jobs pendentes
+        .single()
 
-      if (error) throw error
+      if (!currentJob) {
+        alert("Job não encontrado.")
+        setAcceptingJobId(null)
+        await loadMap()
+        return
+      }
 
+      if (currentJob.status !== "pending") {
+        // Remover job das listas pois não está mais disponível
+        setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
+        setAllJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
+        setSelectedJob(null)
+        alert(`Este job não está mais disponível. Status atual: ${currentJob.status === "accepted" ? "Aceito" : currentJob.status === "in_progress" ? "Em Progresso" : currentJob.status}.`)
+        setAcceptingJobId(null)
+        await loadMap()
+        return
+      }
+
+      if (currentJob.diarist_id) {
+        // Remover job das listas pois já foi aceito
+        setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
+        setAllJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
+        setSelectedJob(null)
+        alert("Este job já foi aceito por outra diarista.")
+        setAcceptingJobId(null)
+        await loadMap()
+        return
+      }
+
+      // Usar a API route para aceitar o job (isso contorna as políticas RLS)
+      const response = await fetch(`/api/jobs/${jobId}/update-status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "accepted" }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Erro ao aceitar job")
+      }
+
+      const { job: updatedJob } = await response.json()
+
+      // Remover o job aceito das listas imediatamente
+      setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
+      setAllJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
+      setSelectedJob(null)
+
+      // Atualizar job ativo
       await checkActiveJob()
+      
+      // Recarregar mapa para garantir sincronização
+      await loadMap()
+      
+      alert("Job aceito com sucesso!")
       router.push("/dashboard/diarist/jobs")
     } catch (error: any) {
       console.error("Erro ao aceitar job:", error)
@@ -169,14 +244,26 @@ export default function DiaristMapPage() {
 
   const markers = jobs
     .filter((job) => job.latitude && job.longitude)
-    .map((job) => ({
-      id: job.id,
-      position: [job.latitude!, job.longitude!] as [number, number],
-      title: job.title,
-      description: `R$ ${parseFloat(job.price.toString()).toFixed(2)} • ${new Date(job.scheduled_at).toLocaleDateString("pt-BR")}`,
-      avatar_url: job.employer?.avatar_url,
-      color: "#10b981",
-    }))
+    .map((job) => {
+      const marker = {
+        id: job.id,
+        position: [job.latitude!, job.longitude!] as [number, number],
+        title: job.title,
+        description: `R$ ${parseFloat(job.price.toString()).toFixed(2)} • ${new Date(job.scheduled_at).toLocaleDateString("pt-BR")}`,
+        avatar_url: job.employer?.avatar_url,
+        isAvailable: !activeJob, // Verde se não tiver job ativo
+        pulse: !activeJob, // Animar se disponível
+        color: "#10b981", // Verde para jobs disponíveis
+      }
+      return marker
+    })
+  
+  console.log(`Total de marcadores para o mapa: ${markers.length}`)
+  console.log(`Jobs com coordenadas: ${jobs.length}`)
+  console.log(`Total de jobs: ${allJobs.length}`)
+  if (markers.length > 0) {
+    console.log("Posições dos marcadores:", markers.map(m => ({ id: m.id, position: m.position })))
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -234,23 +321,50 @@ export default function DiaristMapPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Jobs Disponíveis no Mapa
           </h1>
-          <p className="text-gray-600">
-            Visualize jobs disponíveis na sua região - {jobs.length} job{jobs.length !== 1 ? 's' : ''} encontrado{jobs.length !== 1 ? 's' : ''}
+          <p className="text-gray-600 mb-2">
+            Visualize jobs disponíveis na sua região - {allJobs.length} job{allJobs.length !== 1 ? 's' : ''} encontrado{allJobs.length !== 1 ? 's' : ''} 
+            {jobs.length < allJobs.length && ` (${jobs.length} com localização no mapa)`}
           </p>
+          {jobs.length === 0 && allJobs.length > 0 && (
+            <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg">
+              <p className="text-sm text-amber-800 font-medium mb-1">
+                ⚠️ Nenhum job aparece no mapa
+              </p>
+              <p className="text-xs text-amber-700">
+                Os jobs não têm coordenadas cadastradas. Isso acontece quando um empregador cria um job sem um endereço completo ou quando o sistema não consegue encontrar as coordenadas do endereço informado.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Card>
-              <CardContent className="p-0">
-                {userLocation && (
-                  <MapContainer
-                    center={userLocation}
-                    zoom={13}
-                    markers={markers}
-                    onMarkerClick={handleMarkerClick}
-                    className="h-[600px] w-full rounded-lg"
-                  />
+              <CardContent className="p-0 relative">
+                {userLocation ? (
+                  <>
+                    <MapContainer
+                      center={userLocation}
+                      zoom={markers.length > 0 ? 13 : 10}
+                      markers={markers}
+                      onMarkerClick={handleMarkerClick}
+                      className="h-[600px] w-full rounded-lg"
+                    />
+                    {markers.length === 0 && allJobs.length > 0 && (
+                      <div className="absolute top-4 left-4 z-[1000] bg-white p-3 rounded-lg shadow-lg border border-amber-300 max-w-xs">
+                        <p className="text-sm text-amber-800 font-medium">
+                          ⚠️ Nenhum marcador no mapa
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Os {allJobs.length} job{allJobs.length !== 1 ? 's' : ''} disponíveis não têm coordenadas cadastradas e não podem ser exibidos no mapa.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="h-[600px] w-full flex items-center justify-center bg-gray-100 rounded-lg">
+                    <p className="text-gray-500">Carregando localização...</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -324,21 +438,41 @@ export default function DiaristMapPage() {
             <Card>
               <CardContent className="p-4">
                 <h4 className="font-semibold mb-3">Jobs Disponíveis</h4>
+                {allJobs.length > 0 && jobs.length === 0 && (
+                  <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                    <p className="text-xs text-amber-800">
+                      ⚠️ Nenhum job tem coordenadas cadastradas. Os empregadores precisam criar jobs com endereços completos para aparecerem no mapa.
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {jobs.length > 0 ? (
-                    jobs.map((job) => (
+                  {allJobs.length > 0 ? (
+                    allJobs.map((job) => (
                       <div
                         key={job.id}
-                        className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                        className={`p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                          job.latitude && job.longitude ? "" : "opacity-50"
+                        }`}
                         onClick={() => {
                           setSelectedJob(job)
                           if (job.latitude && job.longitude) {
                             setUserLocation([job.latitude, job.longitude])
+                          } else {
+                            alert("Este job não tem coordenadas cadastradas e não pode ser visualizado no mapa.")
                           }
                         }}
                       >
-                        <p className="font-medium text-sm">{job.title}</p>
-                        <p className="text-xs text-gray-500">R$ {parseFloat(job.price.toString()).toFixed(2)}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{job.title}</p>
+                            <p className="text-xs text-gray-500">R$ {parseFloat(job.price.toString()).toFixed(2)}</p>
+                          </div>
+                          {job.latitude && job.longitude ? (
+                            <span className="text-green-600 text-xs">📍</span>
+                          ) : (
+                            <span className="text-amber-600 text-xs" title="Sem coordenadas">⚠️</span>
+                          )}
+                        </div>
                       </div>
                     ))
                   ) : (

@@ -98,21 +98,39 @@ export default function DiaristJobsPage() {
   }
 
   useEffect(() => {
-    // Primeiro, carregar jobs sem filtro de localização
-    loadJobs()
+    let mounted = true
 
-    // Depois, tentar obter localização da diarista (opcional)
-    // Se conseguir, recarrega os jobs com filtro de distância
-    getCurrentPosition()
-      .then((position) => {
-        const location = { lat: position.latitude, lon: position.longitude }
-        setUserLocation(location)
-        // Recarregar jobs com localização para filtrar por distância
-        loadJobs(location)
-      })
-      .catch((error) => {
-        console.log("Localização não disponível - mostrando todos os jobs")
-      })
+    const initializeJobs = async () => {
+      try {
+        // Tentar obter localização primeiro
+        try {
+          const position = await getCurrentPosition()
+          const location = { lat: position.latitude, lon: position.longitude }
+          if (mounted) {
+            setUserLocation(location)
+            await loadJobs(location)
+          }
+        } catch (error) {
+          // Se não conseguir localização, carregar sem filtro
+          console.log("Localização não disponível - mostrando todos os jobs")
+          if (mounted) {
+            await loadJobs()
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao inicializar jobs:", error)
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    initializeJobs()
+
+    return () => {
+      mounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleAcceptJob = async (jobId: string) => {
@@ -148,19 +166,61 @@ export default function DiaristJobsPage() {
         return
       }
 
-      const { error } = await supabase
+      // Primeiro, verificar o estado atual do job
+      const { data: currentJob } = await supabase
         .from("jobs")
-        .update({ 
-          diarist_id: user.id,
-          status: "accepted" 
-        })
+        .select("id, status, diarist_id")
         .eq("id", jobId)
-        .eq("status", "pending") // Garantir que só aceita jobs pendentes
+        .single()
 
-      if (error) throw error
+      if (!currentJob) {
+        alert("Job não encontrado.")
+        setAcceptingJobId(null)
+        await loadJobs(userLocation || undefined)
+        return
+      }
 
-      // Recarregar jobs e verificar job ativo
+      if (currentJob.status !== "pending") {
+        // Remover job da lista pois não está mais disponível
+        setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
+        alert(`Este job não está mais disponível. Status atual: ${currentJob.status === "accepted" ? "Aceito" : currentJob.status === "in_progress" ? "Em Progresso" : currentJob.status}.`)
+        setAcceptingJobId(null)
+        await loadJobs(userLocation || undefined)
+        return
+      }
+
+      if (currentJob.diarist_id) {
+        // Remover job da lista pois já foi aceito
+        setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
+        alert("Este job já foi aceito por outra diarista.")
+        setAcceptingJobId(null)
+        await loadJobs(userLocation || undefined)
+        return
+      }
+
+      // Usar a API route para aceitar o job (isso contorna as políticas RLS)
+      const response = await fetch(`/api/jobs/${jobId}/update-status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "accepted" }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Erro ao aceitar job")
+      }
+
+      const { job: updatedJob } = await response.json()
+
+      // Remover o job aceito da lista imediatamente
+      setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
+      
+      // Atualizar job ativo
       await checkActiveJob()
+      
+      // Recarregar jobs para garantir sincronização
       await loadJobs(userLocation || undefined)
       
       alert("Job aceito com sucesso!")
@@ -194,7 +254,12 @@ export default function DiaristJobsPage() {
               <span className="text-gray-500">/</span>
               <span className="text-gray-700">Jobs Disponíveis</span>
             </div>
-            <UserMenu role="diarist" />
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard/diarist/my-jobs">
+                <Button variant="outline" size="sm">Meus Jobs</Button>
+              </Link>
+              <UserMenu role="diarist" />
+            </div>
           </div>
         </div>
       </nav>

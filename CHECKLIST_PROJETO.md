@@ -1,10 +1,10 @@
-# ✅ Checklist do Projeto DiaristaLink
+# ✅ Checklist do Projeto Empreguetes.com
 
 ## 📋 Status Geral do Projeto
 
-**Última atualização:** Dezembro 2024  
-**Porta do servidor:** 3001  
-**Status:** ✅ Autenticação completa e testada | 🚧 Mapa interativo em desenvolvimento | 📦 Projeto versionado no GitHub
+**Última atualização:** Janeiro 2025  
+**Porta do servidor:** 3000 (dev)  
+**Status:** ✅ Autenticação completa com OAuth | ✅ Mapas funcionando | ✅ Sistema de jobs implementado | ✅ Deploy configurado na Vercel | 📦 Projeto versionado no GitHub
 
 ---
 
@@ -25,6 +25,12 @@
 - [x] CTA final
 - [x] Navbar responsiva com animações
 - [x] Design moderno e elegante (cores: Azul #1E3A8A e Verde #10B981)
+- [x] Rebranding para "Empreguetes.com"
+- [x] Logo animado com gradiente contínuo
+- [x] Homepage redesenhada com imagem de fundo de limpeza
+- [x] Componente AnimatedText com efeitos de brilho e partículas
+- [x] Layout centralizado na hero section
+- [x] Ilustrações SVG customizadas (removidas bonequinhos)
 
 ### Componentes UI Base
 - [x] Button (com variantes e animações)
@@ -60,6 +66,10 @@
 - [x] Row Level Security (RLS) configurado
 - [x] Políticas de segurança criadas
 - [x] Colunas latitude/longitude adicionadas em profiles
+- [x] Campos de verificação para diaristas (CPF, documentos, certificados)
+- [x] Trigger de banco de dados para "um job ativo por diarista"
+- [x] Índice de performance para jobs (diarist_id, status)
+- [x] Campos de endereço (address, city, state, zip_code) em profiles
 
 ### Autenticação
 - [x] Hook `useAuth` criado
@@ -69,6 +79,11 @@
 - [x] Logout funcionando
 - [x] Middleware de proteção de rotas
 - [x] Callback route para OAuth
+- [x] OAuth com Google implementado
+- [x] OAuth com Apple implementado
+- [x] Botões OAuth com ícones SVG
+- [x] Estados de loading para OAuth
+- [x] Redirecionamento baseado em role após OAuth
 
 ### Páginas de Autenticação
 - [x] Página de login (/login) com componentes shadcn/ui
@@ -133,19 +148,23 @@
 - [ ] Animações de pins pulsantes
 
 ### Para Diaristas
-- [ ] Dashboard com mapa mostrando jobs disponíveis
-- [ ] Pins coloridos (verde=disponível) para jobs
-- [ ] Aceitar/rejeitar jobs em 1-tap
+- [x] Dashboard com mapa mostrando jobs disponíveis (/dashboard/diarist/map)
+- [x] Página de jobs disponíveis (/dashboard/diarist/jobs)
+- [x] Mapa com jobs marcados e popup de detalhes
+- [x] Sistema de aceitar jobs com validação de "um job por vez"
+- [x] Alerta visual quando há job ativo
+- [x] Botões desabilitados quando há job ativo
+- [ ] Pins coloridos customizados (verde=disponível) para jobs
 - [ ] Rastreamento de rota em tempo real (polyline)
 - [ ] Visualização de rota como no Uber
 
 ### Funcionalidades de Mapa
-- [ ] Busca de endereço (usando Nominatim - gratuito)
-- [ ] Geocoding de endereços
-- [ ] Reverse geocoding (coordenadas → endereço)
-- [ ] Autocomplete de endereços
-- [ ] Cálculo de distância entre pontos
-- [ ] Filtros de raio de busca
+- [x] Busca de endereço (usando Nominatim - gratuito)
+- [x] Geocoding de endereços (implementado na criação de jobs)
+- [x] Reverse geocoding (coordenadas → endereço) - API route criada
+- [x] Cálculo de distância entre pontos (implementado)
+- [x] Filtros de raio de busca (implementado nos mapas)
+- [ ] Autocomplete de endereços (melhorar UX)
 
 ---
 
@@ -179,6 +198,10 @@
 - [x] Status de jobs (pending, accepted, in_progress, completed, cancelled)
 - [x] Visualização de jobs no dashboard com estatísticas
 - [x] Sistema de aceitar jobs (diaristas)
+- [x] Validação de "um job por vez" no frontend (diaristas)
+- [x] Validação de "um job por vez" no backend (trigger PostgreSQL)
+- [x] Verificação de job ativo antes de aceitar novo
+- [x] UI de alerta quando há job ativo
 - [ ] Histórico de jobs
 - [ ] Cancelamento de jobs
 - [ ] Edição de jobs (antes de aceitar)
@@ -244,7 +267,14 @@
 - [ ] Exibição de ratings nos cards
 
 ### Perfis
-- [ ] Perfil editável (foto, bio, certificados)
+- [x] Página de verificação para diaristas (/dashboard/diarist/verification)
+- [x] Upload de documentos (CPF, antecedentes, comprovante de endereço)
+- [x] Upload de certificados
+- [x] Sistema de referências profissionais
+- [x] Campos de endereço no cadastro (diaristas)
+- [x] Geocoding de endereço para coordenadas GPS
+- [x] Atualização de coordenadas no perfil
+- [ ] Perfil editável (foto, bio) - página dedicada
 - [ ] Histórico de avaliações
 - [ ] Estatísticas de jobs completados
 - [ ] Badges e conquistas
@@ -292,49 +322,66 @@
 - [ ] Cobertura de testes
 
 ### Deploy
-- [ ] Deploy na Vercel
-- [ ] Variáveis de ambiente configuradas
+- [x] Deploy na Vercel configurado
+- [x] Variáveis de ambiente configuradas no Vercel (Production, Preview, Development)
+- [x] Vercel CLI instalado e configurado
+- [x] Projeto vinculado ao Vercel
+- [x] Configuração de build (next.config.js com output: 'standalone')
+- [x] API routes marcadas como dynamic para Vercel
+- [x] Suspense boundaries para useSearchParams
+- [x] Dynamic imports para componentes com window (mapas)
 - [ ] Domínio customizado (opcional)
-- [ ] SSL/HTTPS configurado
+- [x] SSL/HTTPS configurado (automático na Vercel)
 - [ ] Monitoramento de erros
 
 ---
 
 ## 📊 Resumo do Progresso
 
-### ✅ Concluído: 2 de 9 fases (22%)
-- ✅ Fase 1: Setup Inicial e Landing Page
-- ✅ Fase 2: Autenticação Completa
+### ✅ Concluído: 3 de 9 fases (33%)
+- ✅ Fase 1: Setup Inicial e Landing Page (100%)
+- ✅ Fase 2: Autenticação Completa (100%)
+- ✅ Fase 9: Deploy (80% - configurado, falta monitoramento)
 
-### 🚧 Em Desenvolvimento: 1 fase (33%)
-- 🚧 Fase 3: Mapa Interativo (em desenvolvimento - estrutura base criada)
+### 🚧 Em Desenvolvimento: 2 fases (44%)
+- 🚧 Fase 3: Mapa Interativo (70% - mapas funcionando, falta customização de pins)
+- 🚧 Fase 4: Sistema de Jobs e Matching (75% - jobs funcionando, falta matching automático)
 
-### ⏳ Pendente: 6 fases (67%)
-- ⏳ Fase 4: Sistema de Jobs e Matching
-- ⏳ Fase 5: Chat em Tempo Real
-- ⏳ Fase 6: Pagamentos (Opcional)
-- ⏳ Fase 7: Sistema de Avaliações
-- ⏳ Fase 8: Funcionalidades Avançadas
-- ⏳ Fase 9: Testes e Deploy
+### ⏳ Pendente: 4 fases (44%)
+- ⏳ Fase 5: Chat em Tempo Real (0%)
+- ⏳ Fase 6: Pagamentos (Opcional) (0%)
+- ⏳ Fase 7: Sistema de Avaliações (20% - estrutura de perfil criada)
+- ⏳ Fase 8: Funcionalidades Avançadas (0%)
 
 ---
 
-## 🎯 Próximos Passos Recomendados (Q4 2025)
+## 🎯 Próximos Passos Recomendados (Q1 2025)
 
-1. **Validar fluxo da diarista**
-   - Repetir testes de login/logout com perfil diarista
-   - Ajustar redirecionamentos e feedbacks de carregamento
-   - Garantir layout equivalente ao employer dashboard
+1. **Melhorar Mapas (Fase 3)**
+   - [ ] Criar pins customizados com cores diferentes (verde=disponível, vermelho=ocupado)
+   - [ ] Adicionar badges de rating/estrelas nos pins
+   - [ ] Implementar modal de perfil ao clicar no pin
+   - [ ] Adicionar animações de pins pulsantes
+   - [ ] Implementar busca de endereço no mapa
 
-2. **Implementar Mapa Interativo (Fase 3)**
-   - Configurar React-Leaflet + estilos
-   - Criar componente base reutilizável (`MapContainer`)
-   - Integrar geolocalização do navegador
+2. **Sistema de Matching (Fase 4)**
+   - [ ] Algoritmo de matching baseado em localização GPS
+   - [ ] Filtro por disponibilidade (horário)
+   - [ ] Notificações push quando job matches
+   - [ ] Priorização de diaristas com ratings altos
+   - [ ] Sistema de matching em tempo real
 
-3. **Preparar Sistema de Jobs (Fase 4)**
-   - Definir schema final (`jobs`, `job_matches`, `job_messages`)
-   - Criar seed de dados para testes locais
-   - Desenhar wireframes de fluxo (empregador ↔ diarista)
+3. **Chat em Tempo Real (Fase 5)**
+   - [ ] Configurar Supabase Realtime channels
+   - [ ] Criar interface de chat estilo WhatsApp
+   - [ ] Implementar upload de fotos no chat
+   - [ ] Adicionar typing indicators
+
+4. **Sistema de Avaliações (Fase 7)**
+   - [ ] Formulário de avaliação pós-job
+   - [ ] Sistema de estrelas (1-5)
+   - [ ] Cálculo de rating médio
+   - [ ] Exibição de ratings nos perfis
 
 ---
 
@@ -348,6 +395,6 @@
 
 ---
 
-**Última atualização:** Dezembro 2024  
-**Status:** ✅ Projeto configurado, autenticação completa, mapa interativo iniciado | 📦 Versionado no GitHub | 🚧 Próximo: Buscar diaristas reais no Supabase e criar sistema de jobs
+**Última atualização:** Janeiro 2025  
+**Status:** ✅ Projeto configurado e deployado | ✅ Autenticação completa com OAuth | ✅ Mapas funcionando para ambos os lados | ✅ Sistema de jobs implementado com validação | ✅ Deploy configurado na Vercel | 📦 Versionado no GitHub | 🚧 Próximo: Chat em tempo real e sistema de avaliações
 

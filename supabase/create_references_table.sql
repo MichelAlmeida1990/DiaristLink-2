@@ -74,3 +74,5 @@ CREATE POLICY "Employers can view verified diarist certificates" ON certificates
   );
 
 
+
+
