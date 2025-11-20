@@ -1,36 +1,71 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import UserMenu from "@/components/nav/UserMenu"
 import Logo from "@/components/Logo"
 
-export default async function EmployerDashboard() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function EmployerDashboard() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<any>(null)
+  const [jobs, setJobs] = useState<any[]>([])
 
-  if (!user) {
-    redirect("/login")
+  useEffect(() => {
+    const loadData = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        router.push("/login")
+        return
+      }
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+
+      if (!profileData || profileData.role !== "employer") {
+        router.push("/dashboard")
+        return
+      }
+
+      setProfile(profileData)
+
+      // Buscar jobs do empregador
+      const { data: jobsData } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("employer_id", user.id)
+        .order("created_at", { ascending: false })
+
+      setJobs(jobsData || [])
+      setLoading(false)
+    }
+
+    loadData()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    )
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
-
-  if (!profile || profile.role !== "employer") {
-    redirect("/dashboard")
+  if (!profile) {
+    return null
   }
-
-  // Buscar jobs do empregador
-  const { data: jobs } = await supabase
-    .from("jobs")
-    .select("*")
-    .eq("employer_id", user.id)
-    .order("created_at", { ascending: false })
-
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -69,12 +104,7 @@ export default async function EmployerDashboard() {
             <CardHeader>
               <CardDescription>Jobs Ativos</CardDescription>
               <CardTitle className="text-4xl text-blue-600">
-                {(() => {
-                  const activeJobs = jobs?.filter(
-                    (j) => j.status === "pending" || j.status === "accepted" || j.status === "in_progress"
-                  ).length || 0
-                  return activeJobs
-                })()}
+                {jobs.filter((j) => j.status === "pending" || j.status === "accepted" || j.status === "in_progress").length}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -82,7 +112,7 @@ export default async function EmployerDashboard() {
             <CardHeader>
               <CardDescription>Jobs Concluídos</CardDescription>
               <CardTitle className="text-4xl text-green-600">
-                {jobs?.filter((j) => j.status === "completed").length || 0}
+                {jobs.filter((j) => j.status === "completed").length}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -90,11 +120,8 @@ export default async function EmployerDashboard() {
             <CardHeader>
               <CardDescription>Total Gasto</CardDescription>
               <CardTitle className="text-4xl text-purple-600">
-                R$ {(() => {
-                  const total = jobs?.filter((j) => j.status === "completed")
-                    .reduce((sum, j) => sum + parseFloat(j.price.toString()), 0) || 0
-                  return total.toFixed(2)
-                })()}
+                R$ {jobs.filter((j) => j.status === "completed")
+                  .reduce((sum, j) => sum + parseFloat(j.price.toString()), 0).toFixed(2)}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -220,4 +247,3 @@ export default async function EmployerDashboard() {
     </div>
   )
 }
-

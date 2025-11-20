@@ -1,10 +1,32 @@
+import { Geolocation } from '@capacitor/geolocation'
+import { isCapacitor } from './capacitor'
+
 export interface GeolocationPosition {
   latitude: number
   longitude: number
   accuracy?: number
 }
 
-export function getCurrentPosition(): Promise<GeolocationPosition> {
+export async function getCurrentPosition(): Promise<GeolocationPosition> {
+  // Se estiver rodando no Capacitor (app mobile), usar plugin nativo
+  if (isCapacitor()) {
+    try {
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+      })
+      
+      return {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+      }
+    } catch (error: any) {
+      throw new Error(error.message || "Erro ao obter localização")
+    }
+  }
+
+  // Caso contrário, usar API do navegador
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error("Geolocalização não suportada pelo navegador"))
@@ -33,7 +55,33 @@ export function getCurrentPosition(): Promise<GeolocationPosition> {
 
 export function watchPosition(
   callback: (position: GeolocationPosition) => void
-): number {
+): number | null {
+  // Se estiver rodando no Capacitor, usar plugin nativo
+  if (isCapacitor()) {
+    Geolocation.watchPosition(
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+      },
+      (position, err) => {
+        if (err) {
+          console.error("Erro ao obter localização:", err)
+          return
+        }
+        if (position) {
+          callback({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          })
+        }
+      }
+    )
+    // Retornar um ID simbólico (o Capacitor gerencia internamente)
+    return -1
+  }
+
+  // Caso contrário, usar API do navegador
   if (!navigator.geolocation) {
     throw new Error("Geolocalização não suportada pelo navegador")
   }
@@ -57,7 +105,11 @@ export function watchPosition(
   )
 }
 
-export function clearWatch(watchId: number) {
+export function clearWatch(watchId: number | null) {
+  if (watchId === null || watchId === -1) {
+    // Capacitor gerencia internamente, não precisa limpar
+    return
+  }
   navigator.geolocation.clearWatch(watchId)
 }
 

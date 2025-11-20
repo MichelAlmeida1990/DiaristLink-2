@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,31 +10,63 @@ import UserMenu from "@/components/nav/UserMenu"
 import Logo from "@/components/Logo"
 import UpdateCoordinatesButton from "@/components/diarist/UpdateCoordinatesButton"
 
-export default async function DiaristDashboard() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function DiaristDashboard() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<any>(null)
+  const [jobs, setJobs] = useState<any[]>([])
 
-  if (!user) {
-    redirect("/login")
+  useEffect(() => {
+    const loadData = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        router.push("/login")
+        return
+      }
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+
+      if (!profileData || profileData.role !== "diarist") {
+        router.push("/dashboard")
+        return
+      }
+
+      setProfile(profileData)
+
+      // Buscar jobs relacionados à diarista
+      const { data: jobsData } = await supabase
+        .from("jobs")
+        .select("*")
+        .or(`diarist_id.eq.${profileData.id},status.eq.pending`)
+        .order("created_at", { ascending: false })
+
+      setJobs(jobsData || [])
+      setLoading(false)
+    }
+
+    loadData()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    )
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
-
-  if (!profile || profile.role !== "diarist") {
-    redirect("/dashboard")
+  if (!profile) {
+    return null
   }
-
-  // Buscar jobs relacionados à diarista
-  const { data: jobs } = await supabase
-    .from("jobs")
-    .select("*")
-    .or(`diarist_id.eq.${profile.id},status.eq.pending`)
-    .order("created_at", { ascending: false })
-
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -73,10 +108,7 @@ export default async function DiaristDashboard() {
             <CardHeader>
               <CardDescription>Jobs Disponíveis</CardDescription>
               <CardTitle className="text-4xl text-blue-600">
-                {(() => {
-                  const availableJobs = jobs?.filter((j) => j.status === "pending" && !j.diarist_id).length || 0
-                  return availableJobs
-                })()}
+                {jobs.filter((j) => j.status === "pending" && !j.diarist_id).length}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -84,7 +116,7 @@ export default async function DiaristDashboard() {
             <CardHeader>
               <CardDescription>Jobs Aceitos</CardDescription>
               <CardTitle className="text-4xl text-green-600">
-                {jobs?.filter((j) => j.diarist_id === profile.id && (j.status === "accepted" || j.status === "in_progress")).length || 0}
+                {jobs.filter((j) => j.diarist_id === profile.id && (j.status === "accepted" || j.status === "in_progress")).length}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -92,11 +124,8 @@ export default async function DiaristDashboard() {
             <CardHeader>
               <CardDescription>Ganhos Totais</CardDescription>
               <CardTitle className="text-4xl text-purple-600">
-                R$ {(() => {
-                  const total = jobs?.filter((j) => j.diarist_id === profile.id && j.status === "completed")
-                    .reduce((sum, j) => sum + parseFloat(j.price.toString()), 0) || 0
-                  return total.toFixed(2)
-                })()}
+                R$ {jobs.filter((j) => j.diarist_id === profile.id && j.status === "completed")
+                  .reduce((sum, j) => sum + parseFloat(j.price.toString()), 0).toFixed(2)}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -231,4 +260,3 @@ export default async function DiaristDashboard() {
     </div>
   )
 }
-

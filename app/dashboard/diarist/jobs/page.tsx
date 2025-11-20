@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import UserMenu from "@/components/nav/UserMenu"
 import { createClient } from "@/lib/supabase/client"
 import { getCurrentPosition } from "@/lib/geolocation"
@@ -32,6 +33,16 @@ interface ActiveJob {
   title: string
   status: string
   scheduled_at: string
+  description?: string
+  service_type?: string
+  address?: string
+  price?: number
+  duration_hours?: number
+  employer?: {
+    name: string
+    email: string
+    avatar_url?: string
+  } | null
 }
 
 export default function DiaristJobsPage() {
@@ -40,6 +51,8 @@ export default function DiaristJobsPage() {
   const [loading, setLoading] = useState(true)
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
   const [activeJob, setActiveJob] = useState<ActiveJob | null>(null)
+  const [activeJobDetails, setActiveJobDetails] = useState<ActiveJob | null>(null)
+  const [showActiveJobModal, setShowActiveJobModal] = useState(false)
   const [acceptingJobId, setAcceptingJobId] = useState<string | null>(null)
 
   const checkActiveJob = async () => {
@@ -65,6 +78,29 @@ export default function DiaristJobsPage() {
       }
     } catch (error) {
       console.error("Erro ao verificar job ativo:", error)
+    }
+  }
+
+  const loadActiveJobDetails = async (jobId: string) => {
+    try {
+      const supabase = createClient()
+      const { data: job, error } = await supabase
+        .from("jobs")
+        .select(`
+          *,
+          employer:profiles!jobs_employer_id_fkey(name, email, avatar_url)
+        `)
+        .eq("id", jobId)
+        .single()
+
+      if (error) throw error
+      if (job) {
+        setActiveJobDetails(job)
+        setShowActiveJobModal(true)
+      }
+    } catch (error) {
+      console.error("Erro ao carregar detalhes do job ativo:", error)
+      alert("Erro ao carregar detalhes do job")
     }
   }
 
@@ -198,21 +234,9 @@ export default function DiaristJobsPage() {
         return
       }
 
-      // Usar a API route para aceitar o job (isso contorna as políticas RLS)
-      const response = await fetch(`/api/jobs/${jobId}/update-status`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: "accepted" }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Erro ao aceitar job")
-      }
-
-      const { job: updatedJob } = await response.json()
+      // Usar função utilitária que funciona tanto na web quanto no mobile
+      const { updateJobStatus } = await import("@/lib/jobs")
+      const { job: updatedJob } = await updateJobStatus(jobId, "accepted")
 
       // Remover o job aceito da lista imediatamente
       setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId))
@@ -267,7 +291,10 @@ export default function DiaristJobsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Alert for active job */}
         {activeJob && (
-          <Card className="mb-6 border-yellow-300 bg-yellow-50">
+          <Card 
+            className="mb-6 border-yellow-300 bg-yellow-50 cursor-pointer hover:bg-yellow-100 transition-colors"
+            onClick={() => loadActiveJobDetails(activeJob.id)}
+          >
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0">
@@ -282,19 +309,130 @@ export default function DiaristJobsPage() {
                   <p className="text-sm text-yellow-800 mb-2">
                     Job: <strong>{activeJob.title}</strong> - Status: <strong>{activeJob.status === "accepted" ? "Aceito" : "Em Progresso"}</strong>
                   </p>
-                  <p className="text-sm text-yellow-700">
+                  <p className="text-sm text-yellow-700 mb-2">
                     Você só pode aceitar um job por vez. Finalize ou cancele o job atual antes de aceitar outro.
                   </p>
+                  <p className="text-xs text-yellow-600 italic">
+                    💡 Clique aqui para ver os detalhes completos do job
+                  </p>
                 </div>
-                <Link href="/dashboard/diarist/jobs">
-                  <Button variant="outline" size="sm">
-                    Ver Meus Jobs
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      loadActiveJobDetails(activeJob.id)
+                    }}
+                  >
+                    Ver Detalhes
                   </Button>
-                </Link>
+                  <Link href="/dashboard/diarist/my-jobs" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="outline" size="sm">
+                      Ver Meus Jobs
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Modal com detalhes do job ativo */}
+        <Dialog open={showActiveJobModal} onOpenChange={setShowActiveJobModal}>
+          <DialogContent className="max-w-3xl">
+            {activeJobDetails && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>{activeJobDetails.title}</DialogTitle>
+                  <DialogDescription>
+                    {activeJobDetails.service_type || "Serviço"}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      activeJobDetails.status === "accepted" ? "bg-blue-100 text-blue-800" :
+                      activeJobDetails.status === "in_progress" ? "bg-purple-100 text-purple-800" :
+                      ""
+                    }`}>
+                      {activeJobDetails.status === "accepted" ? "Aceito" :
+                       activeJobDetails.status === "in_progress" ? "Em Andamento" :
+                       activeJobDetails.status}
+                    </span>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500 mb-1">Endereço</p>
+                      <p className="font-medium">{activeJobDetails.address || "Não informado"}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 mb-1">Data/Hora Agendada</p>
+                      <p className="font-medium">
+                        {new Date(activeJobDetails.scheduled_at).toLocaleString("pt-BR")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 mb-1">Duração</p>
+                      <p className="font-medium">{activeJobDetails.duration_hours || 0} horas</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 mb-1">Preço</p>
+                      <p className="font-medium text-lg text-green-600">
+                        R$ {activeJobDetails.price ? parseFloat(activeJobDetails.price.toString()).toFixed(2) : "0.00"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {activeJobDetails.description && (
+                    <div className="mt-4">
+                      <p className="text-gray-500 mb-2">Descrição</p>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
+                        {activeJobDetails.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {activeJobDetails.employer && (
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="text-gray-500 mb-2">Empregador</p>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-md">
+                        {activeJobDetails.employer.avatar_url ? (
+                          <img 
+                            src={activeJobDetails.employer.avatar_url} 
+                            alt={activeJobDetails.employer.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-semibold text-lg">
+                              {activeJobDetails.employer.name?.charAt(0).toUpperCase() || 'E'}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium">{activeJobDetails.employer.name || 'Empregador'}</p>
+                          <p className="text-sm text-gray-500">{activeJobDetails.employer.email || 'Email não disponível'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowActiveJobModal(false)}>
+                    Fechar
+                  </Button>
+                  <Link href="/dashboard/diarist/my-jobs">
+                    <Button>
+                      Gerenciar Job
+                    </Button>
+                  </Link>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
